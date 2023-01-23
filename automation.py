@@ -8,9 +8,10 @@ import time
 import os
 import openpyxl
 import pandas as pd
+import math
 
 
-def OpenBrowser():
+def openBrowser():
 
     # Using ChromeOptions() to supress the "bluetooth_adapter_winrt.cc" error
     # We aren't using bluetooth, so its fine to supress this error message
@@ -28,7 +29,7 @@ def OpenBrowser():
     return driver
 
 
-def RegistersPerPage(driver, n):
+def registersPerPage(driver, n):
 
     # Getting the number of registers field
     qtd_field = driver.find_element(By.XPATH, '//*[@id="rpp"]')
@@ -43,80 +44,184 @@ def RegistersPerPage(driver, n):
     time.sleep(3)
 
 
-def Filter(driver, service_name):
+def filterService(driver, service_name):
 
     # Clicking on "Filtrar" element
     driver.find_element(By.XPATH, '//*[@id="tblFilter"]/span[5]').click()
-    time.sleep(3)
+    time.sleep(10)
 
     # Type the "Serviço" search input, searching for the service name and pressing ENTER (RETURN button)
     driver.find_element(
         By.XPATH, '//*[@id="fc_6"]').send_keys(service_name + Keys.RETURN)
-    time.sleep(3)
+    time.sleep(10)
 
 
-def ChangeWorksheetName(wb, filepath):
+# def changeWorksheetName(wb, filepath):
 
-    # Getting the worksheet
-    ws = wb[wb.sheetnames[0]]
+#     # Getting the worksheet
+#     ws = wb[wb.sheetnames[0]]
 
-    # Changing the worksheet name
-    ws.title = "Sheet1"
-    wb.save(filepath)
-
-
-def OpenExcel():
-
-    # Setting env variable
-    os.environ['FILEPATH'] = "C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx"
-    filepath = os.getenv('FILEPATH')
-
-    # Creating the workbook
-    wb = openpyxl.Workbook()
-
-    # Saving the workbook
-    wb.save(filepath)
-
-    # Loading workbook
-    wb = openpyxl.load_workbook(
-        r"C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx")
-
-    ChangeWorksheetName(wb, filepath)
+#     # Changing the worksheet name
+#     ws.title = "Sheet1"
+#     wb.save(filepath)
 
 
-def GetDataToTable(driver):
+# def openExcel():
 
-    # Getting Table
-    tbl = driver.find_element(
-        By.XPATH, '//*[@id="aplTbl"]').get_attribute('outerHTML')
+#     # Setting env variable
+#     os.environ['FILEPATH'] = "C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx"
+#     filepath = os.getenv('FILEPATH')
 
-    # Converting to pandas dataframe
-    df = pd.read_html(tbl)
-    df = df[0]
+#     # Creating the workbook
+#     wb = openpyxl.Workbook()
+
+#     # Saving the workbook
+#     wb.save(filepath)
+
+#     # Loading workbook
+#     wb = openpyxl.load_workbook(
+#         r"C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx")
+
+#     changeWorksheetName(wb, filepath)
+
+def nextPage(driver):
+    element = driver.find_element(By.XPATH, '//*[@id="nextPageOffset"]')
+    driver.execute_script("arguments[0].scrollIntoView()", element)
+    driver.execute_script("arguments[0].click()", element)
+    time.sleep(10)
 
 
-def Search(driver):
+def getDataToTable(driver, steps):
+    for i in range(steps):
+        # Getting Table
+        tbl = driver.find_element(
+            By.XPATH, '//*[@id="aplTbl"]').get_attribute('outerHTML')
+
+        # Converting to list of pandas dataframe
+        df_raw = pd.read_html(tbl)
+
+        # If is the first time, we just create the dataframe
+        if (i == 0):
+            # Getting the first element of list, which is our data
+            df = df_raw[0]
+
+        # If is not:
+        #   we get the existent dataframe,
+        #   then join itself with the new dataframe that contains the new data of the new page
+        else:
+            # Getting the first element of list, which is our data
+            df_raw = df_raw[0]
+
+            # Then joining with the existent dataframe 'df'
+            frames = [df, df_raw]
+            df = pd.concat(frames)
+
+        if (i != steps - 1):
+            time.sleep(10)
+            nextPage(driver)
+
+    return df
+
+
+def getSteps(driver):
+    # Getting the span that contains the total number of registers
+    raw = driver.find_element(By.XPATH, '//*[@id="tblFilter"]/span[1]').text
+
+    # The 'raw' will be on this format: 'N total de registros'
+    # Spliting into a list with 'total' as the separator.
+    str_qtd = raw.split('total')
+
+    # Now our list is: ['N ', 'total de registros']
+    # We get the first element, then strip removing the white spaces
+    str_qtd = str_qtd[0].strip()
+
+    # Now we have 'N'. So let's convert into a int. This is our number of total registers
+    qtd = int(str_qtd)
+
+    # The page show just 250 itens per time, so let's calculate how many times the loop will be running
+    n = qtd/250
+    steps = math.ceil(n)
+
+    return steps
+
+
+def removeColumnsDf(df):
+    # Droping columns
+    df.drop('Finalidade', inplace=True, axis=1)
+    df.drop('Num Serviço', inplace=True, axis=1)
+    df.drop('Local Especifico', inplace=True, axis=1)
+    df.drop('Categoria da Estação', inplace=True, axis=1)
+    df.drop('Fase', inplace=True, axis=1)
+    df.drop('Data', inplace=True, axis=1)
+    df.drop('ERP', inplace=True, axis=1)
+    df.drop('HCI', inplace=True, axis=1)
+    df.drop('ID Estação Principal', inplace=True, axis=1)
+
+    return df
+
+
+def tableTreatment(df):
+
+    # Removing custom columns
+    df = removeColumnsDf(df)
+
+    # Replacing NaN values with blank space
+    df.fillna("", inplace=True)
+
+    # On column "Entidade", replace "" with "CANAL VAGO"
+    df["Entidade"].replace(r'^\s*$', "CANAL VAGO", regex=True, inplace=True)
+
+    # Getting index of blank rows
+    index0Row = df[df['Ações'] == ""].index
+
+    # Droping blank rows
+    df.drop(index0Row, inplace=True)
+
+    return df
+
+
+def copyPaste(driver):
+
+    steps = getSteps(driver)
+
+    # For loop
+    df = getDataToTable(driver, 2)
+
+    # Table treatment
+    df = tableTreatment(df)
+
+    # Saving data to a Table
+    df.to_excel(
+        "C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx")
+
+
+def search(driver):
 
     # Define 250 as the number os registers per page
-    RegistersPerPage(driver, 250)
+    registersPerPage(driver, 250)
 
     # Filtering the service name as "TV"
-    Filter(driver, "TV")
-
-    GetDataToTable(driver)
-
-    # Minimizing chrome browser
-    driver.minimize_window()
+    filterService(driver, "TV")
 
 
-def Close(driver):
+def closeBrowser(driver):
 
     # Wait 5 seconds than close the Browser
     time.sleep(5)
     driver.close()
 
 
-chrome = OpenBrowser()
-Search(chrome)
-# OpenExcel()
-# Close(chrome)
+chrome = openBrowser()
+search(chrome)
+df = copyPaste(chrome)
+closeBrowser(chrome)
+
+# df = pd.read_excel(
+#     "C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx")
+
+# df.rename(columns={'Unnamed: 0': 'Index_column'}, inplace=True)
+# index0Row = df[df['Index_column'] == 0].index
+# df.drop(index0Row, inplace=True)
+# df.drop(df.columns[[0]], axis=1, inplace=True)
+# print(df.head(10))
+# df = tableTreatment(df)
