@@ -159,7 +159,7 @@ def copyPaste(driver):
     steps = getSteps(driver)
 
     # For loop
-    df = getDataToTable(driver, 2)
+    df = getDataToTable(driver, steps)
 
     # Table treatment
     df = tableTreatment(df)
