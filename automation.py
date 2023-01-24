@@ -21,8 +21,15 @@ def openBrowser():
         ChromeDriverManager().install()))
 
     # Opening Chrome Browser
+    driver.implicitly_wait(10)
     url = "http://sistemas.anatel.gov.br/se/public/view/b/srd.php"
     driver.get(url)
+    time.sleep(5)
+    driver.refresh()
+    time.sleep(5)
+    driver.refresh()
+    time.sleep(5)
+    driver.refresh()
     time.sleep(5)
 
     return driver
