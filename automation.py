@@ -165,8 +165,9 @@ def copyPaste(driver):
     df = tableTreatment(df)
 
     # Saving data to a Table, removing index
+    filepath = "C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx"
     df.to_excel(
-        "C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx", index=False)
+        filepath, index=False)
 
 
 def search(driver):
