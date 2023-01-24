@@ -5,8 +5,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver import ActionChains
 import time
-import os
-import openpyxl
 import pandas as pd
 import math
 
@@ -23,7 +21,8 @@ def openBrowser():
         ChromeDriverManager().install()))
 
     # Opening Chrome Browser
-    driver.get("http://sistemas.anatel.gov.br/se/public/view/b/srd.php")
+    url = "http://sistemas.anatel.gov.br/se/public/view/b/srd.php"
+    driver.get(url)
     time.sleep(5)
 
     return driver
@@ -55,34 +54,6 @@ def filterService(driver, service_name):
         By.XPATH, '//*[@id="fc_6"]').send_keys(service_name + Keys.RETURN)
     time.sleep(10)
 
-
-# def changeWorksheetName(wb, filepath):
-
-#     # Getting the worksheet
-#     ws = wb[wb.sheetnames[0]]
-
-#     # Changing the worksheet name
-#     ws.title = "Sheet1"
-#     wb.save(filepath)
-
-
-# def openExcel():
-
-#     # Setting env variable
-#     os.environ['FILEPATH'] = "C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx"
-#     filepath = os.getenv('FILEPATH')
-
-#     # Creating the workbook
-#     wb = openpyxl.Workbook()
-
-#     # Saving the workbook
-#     wb.save(filepath)
-
-#     # Loading workbook
-#     wb = openpyxl.load_workbook(
-#         r"C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx")
-
-#     changeWorksheetName(wb, filepath)
 
 def nextPage(driver):
     element = driver.find_element(By.XPATH, '//*[@id="nextPageOffset"]')
@@ -171,11 +142,14 @@ def tableTreatment(df):
     # On column "Entidade", replace "" with "CANAL VAGO"
     df["Entidade"].replace(r'^\s*$', "CANAL VAGO", regex=True, inplace=True)
 
-    # Getting index of blank rows
+    # Getting index of blank rows of 'Ações' column
     index0Row = df[df['Ações'] == ""].index
 
     # Droping blank rows
     df.drop(index0Row, inplace=True)
+
+    # Reseting df index
+    df.reset_index(drop=True, inplace=True)
 
     return df
 
@@ -215,13 +189,3 @@ chrome = openBrowser()
 search(chrome)
 df = copyPaste(chrome)
 closeBrowser(chrome)
-
-# df = pd.read_excel(
-#     "C:/Mirante/Projects/automacao-plano-basico-v2/plano-basico.xlsx")
-
-# df.rename(columns={'Unnamed: 0': 'Index_column'}, inplace=True)
-# index0Row = df[df['Index_column'] == 0].index
-# df.drop(index0Row, inplace=True)
-# df.drop(df.columns[[0]], axis=1, inplace=True)
-# print(df.head(10))
-# df = tableTreatment(df)
