@@ -54,7 +54,7 @@ Code_Steps
 
 Requirements
 =======================
-Before starting, you must have installed the following tools on your machine: [GIT](https://git-scm.com/downloads), [PYTHON](https://www.python.org/downloads/). Also it's nice to have an editor to work with the code like [VSCode](https://code.visualstudio.com/).
+Before starting, you must have installed the following tools on your machine: [GIT](https://git-scm.com/downloads), [PYTHON](https://www.python.org/downloads/), [EXCEL](https://www.microsoft.com/pt-br/microsoft-365/excel). Also it's nice to have an editor to work with the code like [VSCode](https://code.visualstudio.com/).
 
 Also, you must have the following libraries:
 ```bash
