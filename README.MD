@@ -47,10 +47,10 @@ Code_Steps
 6. After getting all data, we manipulate and process data with some custom rules
 7. By the end, we save all as an excel file
 
-## Preview
+<!-- ## Preview
 <p align="center">
   <img alt="Preview Python WebScraping Automation Project" src="https://github.com/J-Neto/ice-cream-parlor-counter/blob/master/demo-gif.gif">
-</p>
+</p> -->
 
 Requirements
 =======================
